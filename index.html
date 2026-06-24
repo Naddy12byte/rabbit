@@ -3,129 +3,292 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐰 Rabbit World</title>
+<title>🐰 Whack-a-Rabbit!</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  background: linear-gradient(160deg, #e8f5e9, #f3e5f5);
+  background: linear-gradient(160deg, #a8edbc, #fed6e3);
   min-height: 100vh;
-  overflow: hidden;
-  cursor: none;
   font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  user-select: none;
 }
-.hint {
-  position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
-  background: rgba(255,255,255,0.7); padding: 10px 22px; border-radius: 50px;
-  font-size: 14px; color: #7c5cbf; backdrop-filter: blur(6px);
-  pointer-events: none; z-index: 999;
+h1 {
+  font-size: 2.2rem;
+  color: #5a3e2b;
+  text-shadow: 2px 2px 0 #fff;
+  margin-bottom: 6px;
 }
-/* === CURSOR RABBIT === */
-#cursor-rabbit {
-  position: fixed; pointer-events: none; z-index: 1000;
-  font-size: 28px; transform: translate(-50%, -50%);
-  transition: transform 0.05s linear;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+.hud {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 18px;
+  background: rgba(255,255,255,0.7);
+  padding: 10px 28px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #5a3e2b;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
-/* === POP RABBIT === */
-.pop-rabbit {
-  position: fixed; pointer-events: none; z-index: 900;
-  font-size: 26px;
-  animation: popUp 1.2s ease-out forwards;
+.hud span { display: flex; align-items: center; gap: 6px; }
+#timer-val { color: #e74c3c; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 380px;
+  width: 100%;
 }
-@keyframes popUp {
-  0%   { transform: translate(-50%,-50%) scale(0) rotate(-20deg); opacity: 1; }
-  40%  { transform: translate(-50%,-120%) scale(1.3) rotate(10deg); opacity: 1; }
-  70%  { transform: translate(-50%,-150%) scale(1) rotate(-5deg); opacity: 1; }
-  100% { transform: translate(-50%,-220%) scale(0.8) rotate(0deg); opacity: 0; }
+.hole {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: radial-gradient(ellipse at 60% 40%, #8B5E3C, #4a2f1a);
+  border-radius: 50%;
+  box-shadow: inset 0 8px 20px rgba(0,0,0,0.5), 0 6px 0 #2d1a0a;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.1s;
 }
-/* === RUNNING RABBIT === */
-.run-rabbit {
-  position: fixed; pointer-events: none; z-index: 800;
-  font-size: 32px;
-  animation: runAcross var(--dur) linear forwards;
+.hole:active { transform: scale(0.95); }
+.rabbit {
+  position: absolute;
+  bottom: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3.2rem;
+  transition: bottom 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  filter: drop-shadow(0 -4px 6px rgba(0,0,0,0.3));
 }
-@keyframes runAcross {
-  0%   { transform: translateX(0) scaleX(var(--dir)); opacity: 0; }
-  5%   { opacity: 1; }
-  95%  { opacity: 1; }
-  100% { transform: translateX(var(--dist)) scaleX(var(--dir)); opacity: 0; }
+.hole.active .rabbit { bottom: 5%; }
+.hole.whacked .rabbit { bottom: 5%; filter: brightness(0.3) drop-shadow(0 0 8px red); }
+.hit-fx {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ff4757;
+  text-shadow: 1px 1px 0 #fff;
+  animation: fxPop 0.5s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
 }
-/* grass decoration */
-.grass {
-  position: fixed; bottom: 0; left: 0; width: 100%;
-  font-size: 28px; letter-spacing: -4px;
-  pointer-events: none; opacity: 0.4;
-  z-index: 0;
+@keyframes fxPop {
+  0%   { opacity: 1; transform: translateX(-50%) scale(0.5) translateY(0); }
+  60%  { opacity: 1; transform: translateX(-50%) scale(1.3) translateY(-20px); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-40px); }
+}
+.miss-fx { color: #aaa; font-size: 1.2rem; }
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.overlay-box {
+  background: #fff;
+  border-radius: 24px;
+  padding: 36px 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  max-width: 320px;
+}
+.overlay-box h2 { font-size: 2rem; color: #5a3e2b; margin-bottom: 8px; }
+.overlay-box p  { color: #888; margin-bottom: 6px; font-size: 1rem; }
+.overlay-box .big { font-size: 3rem; margin: 10px 0; }
+.btn {
+  background: #ff6b6b;
+  color: #fff;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: transform 0.15s, background 0.15s;
+  box-shadow: 0 4px 0 #c0392b;
+}
+.btn:hover { background: #ff4757; transform: translateY(-2px); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.ground {
+  width: 100%;
+  max-width: 380px;
+  height: 30px;
+  background: linear-gradient(#6abf69, #4caf50);
+  border-radius: 0 0 20px 20px;
+  margin-top: -10px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
 }
 </style>
 </head>
 <body>
-<div class="hint">🐰 Gerak mouse • Klik untuk pop • Rabbit berlari sendiri!</div>
-<div id="cursor-rabbit">🐰</div>
-<div class="grass">🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱🌿🌱🌿🌿🌱</div>
+
+<h1>🐰 Whack-a-Rabbit!</h1>
+<div class="hud">
+  <span>⏱ <span id="timer-val">30</span>s</span>
+  <span>⭐ <span id="score-val">0</span></span>
+  <span>❤️ <span id="lives-val">❤️❤️❤️</span></span>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="ground"></div>
+
+<div class="overlay" id="start-overlay">
+  <div class="overlay-box">
+    <div class="big">🐰</div>
+    <h2>Whack-a-Rabbit!</h2>
+    <p>Whack the rabbit before it hides!</p>
+    <p style="font-size:0.85rem; color:#aaa;">Miss 3 times = lose a life<br>You have 30 seconds. Good luck!</p>
+    <button class="btn" onclick="startGame()">Play! 🔨</button>
+  </div>
+</div>
+
+<div class="overlay" id="end-overlay" style="display:none">
+  <div class="overlay-box">
+    <div class="big" id="end-emoji">🎉</div>
+    <h2 id="end-title">Time's Up!</h2>
+    <p id="end-msg">Your final score:</p>
+    <div style="font-size:2.5rem; font-weight:900; color:#ff6b6b;" id="final-score">0</div>
+    <button class="btn" onclick="startGame()">Play Again! 🐰</button>
+  </div>
+</div>
 
 <script>
-const cursor = document.getElementById('cursor-rabbit');
-const popEmojis = ['🐰','🐇','🐾','✨','💨','🌸','⭐'];
-const runEmojis = ['🐇','🐰'];
-let mx = window.innerWidth/2, my = window.innerHeight/2;
-let cx = mx, cy = my;
+const TOTAL_HOLES = 9;
+const TOTAL_TIME  = 30;
+const MAX_LIVES   = 3;
+const rabbits     = ['🐰','🐇','🐰','🐇','🐰'];
 
-// smooth cursor follow
-document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-function animCursor() {
-  cx += (mx - cx) * 0.18;
-  cy += (my - cy) * 0.18;
-  cursor.style.left = cx + 'px';
-  cursor.style.top = cy + 'px';
-  // tilt based on movement direction
-  const dx = mx - cx;
-  cursor.style.transform = `translate(-50%,-50%) scaleX(${dx < -1 ? -1 : 1})`;
-  requestAnimationFrame(animCursor);
+let score = 0, lives = MAX_LIVES, timeLeft = TOTAL_TIME;
+let gameActive = false, timerInterval, spawnTimeout;
+let activeHoles = new Set();
+let speed = 900;
+
+const grid = document.getElementById('grid');
+for (let i = 0; i < TOTAL_HOLES; i++) {
+  const hole = document.createElement('div');
+  hole.className = 'hole';
+  hole.dataset.i = i;
+  const r = document.createElement('div');
+  r.className = 'rabbit';
+  r.textContent = rabbits[i % rabbits.length];
+  hole.appendChild(r);
+  hole.addEventListener('click', () => whack(hole));
+  grid.appendChild(hole);
 }
-animCursor();
+const holes = document.querySelectorAll('.hole');
 
-// pop on click
-document.addEventListener('click', e => {
-  for (let i = 0; i < 4; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'pop-rabbit';
-      el.textContent = popEmojis[Math.floor(Math.random() * popEmojis.length)];
-      const ox = (Math.random() - 0.5) * 60;
-      el.style.left = (e.clientX + ox) + 'px';
-      el.style.top = e.clientY + 'px';
-      el.style.fontSize = (18 + Math.random() * 18) + 'px';
-      document.body.appendChild(el);
-      el.addEventListener('animationend', () => el.remove());
-    }, i * 80);
-  }
-});
-
-// running rabbits
-function spawnRunner() {
-  const el = document.createElement('div');
-  el.className = 'run-rabbit';
-  el.textContent = runEmojis[Math.floor(Math.random() * runEmojis.length)];
-  const goRight = Math.random() > 0.5;
-  const y = 60 + Math.random() * (window.innerHeight - 120);
-  const dur = 3 + Math.random() * 4;
-  el.style.setProperty('--dur', dur + 's');
-  if (goRight) {
-    el.style.left = '-60px';
-    el.style.setProperty('--dist', (window.innerWidth + 120) + 'px');
-    el.style.setProperty('--dir', '1');
-  } else {
-    el.style.left = (window.innerWidth + 60) + 'px';
-    el.style.setProperty('--dist', '-' + (window.innerWidth + 120) + 'px');
-    el.style.setProperty('--dir', '-1');
-  }
-  el.style.top = y + 'px';
-  document.body.appendChild(el);
-  el.addEventListener('animationend', () => el.remove());
-  setTimeout(spawnRunner, 1500 + Math.random() * 3000);
+function startGame() {
+  score = 0; lives = MAX_LIVES; timeLeft = TOTAL_TIME; speed = 900;
+  gameActive = true;
+  holes.forEach(h => { h.classList.remove('active','whacked'); });
+  activeHoles.clear();
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  document.getElementById('start-overlay').style.display = 'none';
+  document.getElementById('end-overlay').style.display = 'none';
+  updateHUD();
+  timerInterval = setInterval(tick, 1000);
+  scheduleSpawn();
 }
-spawnRunner();
+
+function tick() {
+  timeLeft--;
+  updateHUD();
+  if (timeLeft <= 0) endGame('time');
+  if (timeLeft % 5 === 0 && speed > 400) speed -= 80;
+}
+
+function scheduleSpawn() {
+  if (!gameActive) return;
+  const delay = 400 + Math.random() * 600;
+  spawnTimeout = setTimeout(spawnRabbit, delay);
+}
+
+function spawnRabbit() {
+  if (!gameActive) return;
+  const available = [...Array(TOTAL_HOLES).keys()].filter(i => !activeHoles.has(i));
+  if (available.length === 0) { scheduleSpawn(); return; }
+  const idx = available[Math.floor(Math.random() * available.length)];
+  const hole = holes[idx];
+  activeHoles.add(idx);
+  hole.classList.add('active');
+
+  setTimeout(() => {
+    if (hole.classList.contains('active') && !hole.classList.contains('whacked')) {
+      hole.classList.remove('active');
+      activeHoles.delete(idx);
+      if (gameActive) {
+        lives--;
+        updateHUD();
+        showFX(hole, '💨 Miss!', true);
+        if (lives <= 0) { endGame('lives'); return; }
+      }
+    }
+  }, speed);
+
+  scheduleSpawn();
+}
+
+function whack(hole) {
+  if (!gameActive) return;
+  const idx = parseInt(hole.dataset.i);
+  if (!activeHoles.has(idx)) return;
+  activeHoles.delete(idx);
+  hole.classList.remove('active');
+  hole.classList.add('whacked');
+  score++;
+  updateHUD();
+  showFX(hole, '+1 🔨');
+  setTimeout(() => hole.classList.remove('whacked'), 300);
+}
+
+function showFX(hole, txt, miss=false) {
+  const fx = document.createElement('div');
+  fx.className = 'hit-fx' + (miss ? ' miss-fx' : '');
+  fx.textContent = txt;
+  hole.appendChild(fx);
+  fx.addEventListener('animationend', () => fx.remove());
+}
+
+function updateHUD() {
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('timer-val').textContent = timeLeft;
+  const hearts = '❤️'.repeat(lives) + '🖤'.repeat(MAX_LIVES - lives);
+  document.getElementById('lives-val').textContent = hearts;
+}
+
+function endGame(reason) {
+  gameActive = false;
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  holes.forEach(h => h.classList.remove('active','whacked'));
+
+  let emoji = '🎉', title = "Time's Up!", msg = 'Your final score:';
+  if (reason === 'lives') { emoji = '💀'; title = 'Game Over!'; msg = 'You ran out of lives! Final score:'; }
+  else if (score >= 20)   { emoji = '🏆'; title = 'Amazing!'; msg = 'You crushed it! Final score:'; }
+  else if (score >= 10)   { emoji = '😄'; title = 'Nice one!'; msg = 'Not bad at all! Final score:'; }
+
+  document.getElementById('end-emoji').textContent = emoji;
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-msg').textContent = msg;
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('end-overlay').style.display = 'flex';
+}
 </script>
 </body>
 </html>
