@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐰 Whackoo Rabbit!</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: linear-gradient(160deg, #a8edbc, #fed6e3);
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px; user-select: none;
+}
+h1 { font-size: 2.2rem; color: #5a3e2b; text-shadow: 2px 2px 0 #fff; margin-bottom: 6px; }
+.hud {
+  display: flex; gap: 24px; margin-bottom: 18px;
+  background: rgba(255,255,255,0.7); padding: 10px 28px; border-radius: 50px;
+  font-size: 1.1rem; font-weight: 600; color: #5a3e2b;
+  backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.hud span { display: flex; align-items: center; gap: 6px; }
+#timer-val { color: #e74c3c; }
+#speed-badge {
+  font-size: 0.75rem; background: #ff6b6b; color: #fff;
+  padding: 2px 10px; border-radius: 50px; display: none;
+}
+.grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; max-width: 380px; width: 100%;
+}
+.hole {
+  position: relative; width: 100%; aspect-ratio: 1;
+  background: radial-gradient(ellipse at 60% 40%, #8B5E3C, #4a2f1a);
+  border-radius: 50%;
+  box-shadow: inset 0 8px 20px rgba(0,0,0,0.5), 0 6px 0 #2d1a0a;
+  cursor: pointer; overflow: hidden; transition: transform 0.1s;
+}
+.hole:active { transform: scale(0.95); }
+.hole.wrong { animation: wrongShake 0.3s ease; }
+@keyframes wrongShake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.rabbit {
+  position: absolute; bottom: -100%; left: 50%; transform: translateX(-50%);
+  font-size: 3.2rem; transition: bottom 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none; filter: drop-shadow(0 -4px 6px rgba(0,0,0,0.3));
+}
+.hole.active .rabbit { bottom: 5%; }
+.hole.whacked .rabbit { bottom: 5%; filter: brightness(0.3) drop-shadow(0 0 8px red); }
+.hit-fx {
+  position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
+  font-size: 1.4rem; font-weight: 900; color: #ff4757;
+  text-shadow: 1px 1px 0 #fff; animation: fxPop 0.5s ease-out forwards;
+  pointer-events: none; z-index: 10;
+}
+@keyframes fxPop {
+  0%   { opacity: 1; transform: translateX(-50%) scale(0.5) translateY(0); }
+  60%  { opacity: 1; transform: translateX(-50%) scale(1.3) translateY(-20px); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-40px); }
+}
+.miss-fx { color: #aaa; font-size: 1.1rem; }
+.wrong-fx { color: #ff4757; font-size: 1.1rem; }
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; backdrop-filter: blur(4px);
+}
+.overlay-box {
+  background: #fff; border-radius: 24px; padding: 36px 40px;
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 320px;
+}
+.overlay-box h2 { font-size: 2rem; color: #5a3e2b; margin-bottom: 8px; }
+.overlay-box p  { color: #888; margin-bottom: 6px; font-size: 1rem; }
+.overlay-box .big { font-size: 3rem; margin: 10px 0; }
+.loser-title { color: #ff4757 !important; font-size: 1.6rem !important; }
+.btn {
+  background: #ff6b6b; color: #fff; border: none;
+  padding: 14px 36px; border-radius: 50px; font-size: 1.1rem; font-weight: 700;
+  cursor: pointer; margin-top: 16px; width: 100%; display: block;
+  transition: transform 0.15s, background 0.15s; box-shadow: 0 4px 0 #c0392b;
+}
+.btn:hover { background: #ff4757; transform: translateY(-2px); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn-secondary { background: #a0a0a0; box-shadow: 0 4px 0 #707070; margin-top: 10px; }
+.btn-secondary:hover { background: #888; }
+.ground {
+  width: 100%; max-width: 380px; height: 30px;
+  background: linear-gradient(#6abf69, #4caf50);
+  border-radius: 0 0 20px 20px; margin-top: -10px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+</style>
+</head>
+<body>
+
+<h1>🐰 Whackoo Rabbit!</h1>
+<div class="hud">
+  <span>⏱ <span id="timer-val">30</span>s</span>
+  <span>⭐ <span id="score-val">0</span></span>
+  <span>❤️ <span id="lives-val">❤️❤️❤️</span></span>
+  <span id="speed-badge">⚡ FAST!</span>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="ground"></div>
+
+<div class="overlay" id="start-overlay">
+  <div class="overlay-box">
+    <div class="big">🐰</div>
+    <h2>Welcome to<br>Whackoo Rabbit!</h2>
+    <p>Whack the rabbit before it hides!</p>
+    <p style="font-size:0.85rem; color:#aaa;">❌ Wrong hole = lose a life<br>💨 Miss = lose a life<br>30 seconds. Don't be a noob!</p>
+    <button class="btn" onclick="startGame()">Let's Go! 🔨</button>
+  </div>
+</div>
+
+<div class="overlay" id="end-overlay" style="display:none">
+  <div class="overlay-box">
+    <div class="big" id="end-emoji">🎉</div>
+    <h2 id="end-title">Time's Up!</h2>
+    <p id="end-msg">Your final score:</p>
+    <div style="font-size:2.5rem; font-weight:900; color:#ff6b6b;" id="final-score">0</div>
+    <button class="btn" onclick="startGame()">Play Again! 🐰</button>
+    <button class="btn btn-secondary" onclick="startGame()">I Gave Up... Try Again 😭</button>
+  </div>
+</div>
+
+<script>
+const TOTAL_HOLES = 9;
+const TOTAL_TIME  = 30;
+const MAX_LIVES   = 3;
+const rabbits     = ['🐰','🐇','🐰','🐇','🐰'];
+
+const hypeWords  = ['YES! 🔥','BOOM! 💥','GET HIM! 😤','NICE! ✨','EZ! 😎','SLAY! 💅','POW! 👊'];
+const missWords  = ['TOO SLOW! 🐢','BRUH 💀','NOOB! 😂','YIKES! 😬'];
+const wrongWords = ['WRONG HOLE 🤡','BLIND?? 👀','L + RATIO 💀','EMBARRASSING 😭'];
+
+let score = 0, lives = MAX_LIVES, timeLeft = TOTAL_TIME;
+let gameActive = false, timerInterval, spawnTimeout;
+let activeHoles = new Set();
+let speed = 950;
+
+// === SOUND ===
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const actx = new AudioCtx();
+
+function playSound(type) {
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.connect(g); g.connect(actx.destination);
+  const t = actx.currentTime;
+  if (type === 'hit') {
+    o.frequency.setValueAtTime(520, t);
+    o.frequency.exponentialRampToValueAtTime(880, t + 0.1);
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    o.start(); o.stop(t + 0.2);
+  } else if (type === 'wrong' || type === 'miss') {
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(200, t);
+    o.frequency.exponentialRampToValueAtTime(80, t + 0.2);
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    o.start(); o.stop(t + 0.3);
+  } else if (type === 'win') {
+    o.frequency.setValueAtTime(523, t);
+    o.frequency.setValueAtTime(659, t + 0.1);
+    o.frequency.setValueAtTime(784, t + 0.2);
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    o.start(); o.stop(t + 0.5);
+  } else if (type === 'lose') {
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(300, t);
+    o.frequency.exponentialRampToValueAtTime(80, t + 0.5);
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    o.start(); o.stop(t + 0.5);
+  } else if (type === 'tick') {
+    o.frequency.setValueAtTime(1000, t);
+    g.gain.setValueAtTime(0.15, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    o.start(); o.stop(t + 0.05);
+  }
+}
+
+// === GRID ===
+const grid = document.getElementById('grid');
+for (let i = 0; i < TOTAL_HOLES; i++) {
+  const hole = document.createElement('div');
+  hole.className = 'hole';
+  hole.dataset.i = i;
+  const r = document.createElement('div');
+  r.className = 'rabbit';
+  r.textContent = rabbits[i % rabbits.length];
+  hole.appendChild(r);
+  hole.addEventListener('click', () => whack(hole));
+  grid.appendChild(hole);
+}
+const holes = document.querySelectorAll('.hole');
+
+function startGame() {
+  score = 0; lives = MAX_LIVES; timeLeft = TOTAL_TIME; speed = 950;
+  gameActive = true;
+  holes.forEach(h => h.classList.remove('active','whacked','wrong'));
+  activeHoles.clear();
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  document.getElementById('start-overlay').style.display = 'none';
+  document.getElementById('end-overlay').style.display = 'none';
+  document.getElementById('speed-badge').style.display = 'none';
+  updateHUD();
+  timerInterval = setInterval(tick, 1000);
+  scheduleSpawn();
+}
+
+function tick() {
+  timeLeft--;
+  updateHUD();
+  if (timeLeft <= 0) { endGame('time'); return; }
+  if (timeLeft <= 5) playSound('tick');
+  if (timeLeft % 5 === 0 && speed > 300) {
+    speed -= 100;
+    const badge = document.getElementById('speed-badge');
+    badge.style.display = 'inline';
+    badge.textContent = speed <= 400 ? '⚡⚡ SUPER FAST!' : '⚡ FASTER!';
+  }
+}
+
+function scheduleSpawn() {
+  if (!gameActive) return;
+  spawnTimeout = setTimeout(spawnRabbit, 300 + Math.random() * 500);
+}
+
+function spawnRabbit() {
+  if (!gameActive) return;
+  const available = [...Array(TOTAL_HOLES).keys()].filter(i => !activeHoles.has(i));
+  if (available.length === 0) { scheduleSpawn(); return; }
+  const idx = available[Math.floor(Math.random() * available.length)];
+  const hole = holes[idx];
+  activeHoles.add(idx);
+  hole.classList.add('active');
+  setTimeout(() => {
+    if (hole.classList.contains('active') && !hole.classList.contains('whacked')) {
+      hole.classList.remove('active');
+      activeHoles.delete(idx);
+      if (gameActive) {
+        lives--;
+        updateHUD();
+        playSound('miss');
+        showFX(hole, missWords[Math.floor(Math.random() * missWords.length)], 'miss');
+        if (lives <= 0) { endGame('lives'); return; }
+      }
+    }
+  }, speed);
+  scheduleSpawn();
+}
+
+function whack(hole) {
+  if (!gameActive) return;
+  const idx = parseInt(hole.dataset.i);
+  if (!activeHoles.has(idx)) {
+    hole.classList.add('wrong');
+    setTimeout(() => hole.classList.remove('wrong'), 300);
+    lives--;
+    updateHUD();
+    playSound('wrong');
+    showFX(hole, wrongWords[Math.floor(Math.random() * wrongWords.length)], 'wrong');
+    if (lives <= 0) { endGame('wrong'); return; }
+    return;
+  }
+  activeHoles.delete(idx);
+  hole.classList.remove('active');
+  hole.classList.add('whacked');
+  score++;
+  updateHUD();
+  playSound('hit');
+  showFX(hole, hypeWords[Math.floor(Math.random() * hypeWords.length)]);
+  setTimeout(() => hole.classList.remove('whacked'), 300);
+}
+
+function showFX(hole, txt, type='hit') {
+  const fx = document.createElement('div');
+  fx.className = 'hit-fx' + (type === 'miss' ? ' miss-fx' : type === 'wrong' ? ' wrong-fx' : '');
+  fx.textContent = txt;
+  hole.appendChild(fx);
+  fx.addEventListener('animationend', () => fx.remove());
+}
+
+function updateHUD() {
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('timer-val').textContent = timeLeft;
+  const hearts = '❤️'.repeat(Math.max(0,lives)) + '🖤'.repeat(Math.max(0, MAX_LIVES - lives));
+  document.getElementById('lives-val').textContent = hearts;
+}
+
+function endGame(reason) {
+  gameActive = false;
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  holes.forEach(h => h.classList.remove('active','whacked','wrong'));
+
+  let emoji, title, msg;
+  if (reason === 'lives' || reason === 'wrong') {
+    emoji = '💀'; title = 'U LOSER NOOB 🤡'; msg = 'Absolutely tragic. Score:';
+    document.getElementById('end-title').className = 'loser-title';
+    playSound('lose');
+  } else {
+    document.getElementById('end-title').className = '';
+    if (score >= 20)      { emoji = '🏆'; title = 'GOAT! 🐐'; msg = 'You absolutely DESTROYED it! Score:'; }
+    else if (score >= 10) { emoji = '😄'; title = 'Not bad!'; msg = 'Pretty decent for a noob. Score:'; }
+    else                  { emoji = '😬'; title = 'Bruh...'; msg = 'That was... something. Score:'; }
+    playSound('win');
+  }
+
+  document.getElementById('end-emoji').textContent = emoji;
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-msg').textContent = msg;
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('end-overlay').style.display = 'flex';
+}
+</script>
+</body>
+</html>
