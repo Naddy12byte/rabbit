@@ -128,7 +128,7 @@ h1 { font-size: 2.2rem; color: #5a3e2b; text-shadow: 2px 2px 0 #fff; margin-bott
     <button class="btn btn-secondary" onclick="startGame()">I Gave Up... Try Again 😭</button>
   </div>
 </div>
-
+R U A WEIRDO 
 <script>
 const TOTAL_HOLES = 9;
 const TOTAL_TIME  = 30;
@@ -306,15 +306,17 @@ function endGame(reason) {
 
   let emoji, title, msg;
   if (reason === 'lives' || reason === 'wrong') {
-    emoji = '💀'; title = 'U LOSER NOOB 🤡'; msg = 'Absolutely tragic! R U BLIND. Score:';
+    emoji = '💀'; title = 'U LOSER NOOB 🤡'; msg = 'Absolutely tragic! U DONE PRETTY WELL WEIRD-ASS. Score:';
     document.getElementById('end-title').className = 'loser-title';
     playSound('lose');
   } else {
     document.getElementById('end-title').className = '';
-    if (score >= 20)      { emoji = '🏆'; title = 'GOAT! 🐐'; msg = 'You absolutely DESTROYED it! Score:'; }
-    else if (score >= 10) { emoji = '😄'; title = 'Not bad!'; msg = 'Pretty decent for a noob. Score:'; }
-    else                  { emoji = '😬'; title = 'Bruh...'; msg = 'That was... something. Score:'; }
-    playSound('win');
+    if (score >= 20)      { emoji = '🏆'; title = 'GOAT! 🐐'; msg = 'Undisputed champion. Score:'; }
+else if (score >= 15) { emoji = '🔥'; title = 'On Fire!'; msg = 'Absolutely destroying it! Score:'; }
+else if (score >= 10) { emoji = '😎'; title = 'Pretty Slick!'; msg = 'Okay okay we see you! Score:'; }
+else if (score >= 5)  { emoji = '😄'; title = 'YERR Not bad!'; msg = 'Getting there... Score:'; }
+else if (score >= 3)  { emoji = '😬'; title = 'Bruh...'; msg = 'That was... something. Score:'; }
+else                  { emoji = '💀'; title = 'Did you even try??'; msg = 'Genuinely embarrassing. Score:'; }
   }
 
   document.getElementById('end-emoji').textContent = emoji;
