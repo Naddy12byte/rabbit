@@ -135,7 +135,7 @@ const TOTAL_TIME  = 30;
 const MAX_LIVES   = 3;
 const rabbits     = ['🐰','🐇','🐰','🐇','🐰'];
 
-const hypeWords  = ['YES! 🔥','BOOM! 💥','GET HIM! 😤','NICE! ✨','EZ! 😎','SLAY! 💅','POW! 👊'];
+const hypeWords  = ['UISHH! 🔥','BOOM! 💥','YERRRR! 😤','NICE! ✨','EZ! 😎','SLAY! 💅','POW! 👊'];
 const missWords  = ['TOO SLOW! 🐢','BRUH 💀','NOOB! 😂','YIKES! 😬'];
 const wrongWords = ['WRONG HOLE 🤡','BLIND?? 👀','L + RATIO 💀','EMBARRASSING 😭'];
 
@@ -306,7 +306,7 @@ function endGame(reason) {
 
   let emoji, title, msg;
   if (reason === 'lives' || reason === 'wrong') {
-    emoji = '💀'; title = 'U LOSER NOOB 🤡'; msg = 'Absolutely tragic. Score:';
+    emoji = '💀'; title = 'U LOSER NOOB 🤡'; msg = 'Absolutely tragic! R U BLIND. Score:';
     document.getElementById('end-title').className = 'loser-title';
     playSound('lose');
   } else {
